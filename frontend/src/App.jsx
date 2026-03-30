@@ -6,7 +6,7 @@ import ResultsGrid from "./components/ResultsGrid";
 import ApiKeySetup from "./components/ApiKeySetup";
 import { BookOpen, Cpu, LogOut, AlertCircle } from "lucide-react";
 
-function Header({ onLogout }) {
+function Header({ onLogout, onClear, showClear }) {
   return (
     <header className="border-b border-surface-border bg-surface-card/50 sticky top-0 z-10 backdrop-blur-sm">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -21,9 +21,20 @@ function Header({ onLogout }) {
             </p>
           </div>
         </div>
-        <button onClick={onLogout} className="text-gray-500 hover:text-gray-300 transition-colors" title="Change API Key">
-          <LogOut className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          {showClear && (
+            <button
+              onClick={onClear}
+              className="text-gray-500 hover:text-gray-300 transition-colors text-xs px-2 py-1 rounded hover:bg-surface-border"
+              title="Clear results"
+            >
+              Clear
+            </button>
+          )}
+          <button onClick={onLogout} className="text-gray-500 hover:text-gray-300 transition-colors" title="Change API Key">
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </header>
   );
@@ -169,12 +180,21 @@ export default function App() {
     setIsSearching(false);
   };
 
+  const handleClear = () => {
+    if (pollTimer.current) clearTimeout(pollTimer.current);
+    setResults(null);
+    setIsSearching(false);
+    setSearchError(null);
+    setProgress(null);
+    setProgressPercent(0);
+  };
+
   if (!accessGranted) return <AccessDenied />;
   if (!apiKey) return <ApiKeySetup onReady={setApiKey} />;
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header onLogout={handleLogout} />
+      <Header onLogout={handleLogout} onClear={handleClear} showClear={results || searchError || isSearching} />
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 space-y-8">
         {/* Hero */}

@@ -40,7 +40,8 @@ class AccessTokenMiddleware(BaseHTTPMiddleware):
             or path == "/index.html"
             or path.startswith("/assets/")
             or path == "/favicon.ico"
-            or path == "/auth/keys"  # Allow creating API keys without access token
+            or path.startswith("/auth/")  # Allow auth endpoints without access token
+            or path.startswith("/search")  # Allow search with just API key
         ):
             return await call_next(request)
 
