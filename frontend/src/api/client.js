@@ -36,6 +36,11 @@ export async function getSearchStatus(taskId) {
   return data;
 }
 
+export async function setTaskEmail(taskId, email) {
+  const { data } = await api.post(`/search/status/${taskId}/email`, { email });
+  return data;
+}
+
 export async function createApiKey(name) {
   const { data } = await api.post("/auth/keys", { name });
   return data;

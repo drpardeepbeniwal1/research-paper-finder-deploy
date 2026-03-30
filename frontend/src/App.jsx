@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { searchPapers, getSearchStatus } from "./api/client";
+import { searchPapers, getSearchStatus, setTaskEmail } from "./api/client";
 import SearchBar from "./components/SearchBar";
 import ResultsGrid from "./components/ResultsGrid";
 import ApiKeySetup from "./components/ApiKeySetup";
-import { BookOpen, Cpu, LogOut, AlertCircle, Square, X, FileText, Download } from "lucide-react";
+import { BookOpen, Cpu, LogOut, AlertCircle, Square, X, FileText, Download, Mail, ExternalLink } from "lucide-react";
 
 function Header({ onLogout, onClear, showClear }) {
   return (
@@ -93,6 +93,9 @@ export default function App() {
   const [progress, setProgress] = useState(null);
   const [progressPercent, setProgressPercent] = useState(0);
   const [activityLog, setActivityLog] = useState([]);
+  const [leaveEmail, setLeaveEmail] = useState("");
+  const [leaveConfirmed, setLeaveConfirmed] = useState(false);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
   const pollTimer = useRef(null);
   const logEndRef = useRef(null);
 
@@ -169,6 +172,9 @@ export default function App() {
       setResults(null);
       setIsSearching(true);
       setActivityLog([]);
+      setLeaveConfirmed(false);
+      setLeaveEmail("");
+      setCurrentTaskId(data.task_id);
       addActivity("Search started — generating search terms...");
       startPolling(data.task_id);
     },
@@ -256,12 +262,61 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <button
-                onClick={handleStop}
-                className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/50 text-red-400 hover:text-red-300 rounded-lg transition-colors text-sm font-medium"
-              >
-                <Square className="w-3.5 h-3.5" fill="currentColor" /> Stop Search
-              </button>
+              <div className="flex items-center gap-3 mt-2">
+                <button
+                  onClick={handleStop}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/50 text-red-400 hover:text-red-300 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Square className="w-3.5 h-3.5" fill="currentColor" /> Stop Search
+                </button>
+              </div>
+
+              {/* Leave & Get Results by Email */}
+              {!leaveConfirmed ? (
+                <div className="mt-4 bg-surface-card border border-blue-700/30 rounded-xl p-4 max-w-md mx-auto">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    <p className="text-blue-300 text-sm font-semibold">Leave & Get Results by Email</p>
+                  </div>
+                  <p className="text-gray-400 text-xs mb-3">
+                    Need to go? Enter your email and we'll send all 3 PDF reports when the search completes.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={leaveEmail}
+                      onChange={(e) => setLeaveEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="flex-1 bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!leaveEmail.trim() || !currentTaskId) return;
+                        try {
+                          await setTaskEmail(currentTaskId, leaveEmail.trim());
+                          setLeaveConfirmed(true);
+                          addActivity(`Email notification set: results will be sent to ${leaveEmail.trim()}`);
+                        } catch (err) {
+                          addActivity("Failed to set email: " + (err.response?.data?.detail || err.message));
+                        }
+                      }}
+                      disabled={!leaveEmail.trim()}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Set & Leave
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 bg-green-900/20 border border-green-700/40 rounded-xl p-4 max-w-md mx-auto text-center">
+                  <Mail className="w-5 h-5 text-green-400 mx-auto mb-1" />
+                  <p className="text-green-300 text-sm font-semibold">Email set!</p>
+                  <p className="text-green-400/70 text-xs mt-1">
+                    Results with all 3 PDFs will be sent to <span className="text-green-300 font-medium">{leaveEmail}</span> when complete.
+                    You can safely close this page.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Live Activity Feed */}

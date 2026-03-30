@@ -37,9 +37,10 @@ async def _job_run_search(task_id: str, req: SearchRequest):
             "progress_percent": 100
         }
 
-        # Send email if provided
-        if req.email:
-            asyncio.create_task(send_completion_email(req.email, req.query, result))
+        # Send email if provided (at search start or via leave-and-email)
+        notify_email = req.email or _tasks[task_id].get("notify_email")
+        if notify_email:
+            asyncio.create_task(send_completion_email(notify_email, req.query, result))
 
     except Exception as e:
         log.error(f"Background search error: {e}", exc_info=True)
@@ -65,6 +66,18 @@ async def search_papers(
     background_tasks.add_task(_job_run_search, task_id, req)
     
     return SearchTaskResponse(task_id=task_id)
+
+@router.post("/status/{task_id}/email")
+async def set_task_email(task_id: str, body: dict, _: str = Depends(require_api_key)):
+    """Set email on a running task so results are emailed when done."""
+    task = _tasks.get(task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    email = body.get("email", "").strip()
+    if not email:
+        raise HTTPException(400, "Email is required")
+    task["notify_email"] = email
+    return {"ok": True, "email": email}
 
 @router.get("/status/{task_id}", response_model=SearchStatusResponse)
 async def get_search_status(task_id: str, _: str = Depends(require_api_key)):
