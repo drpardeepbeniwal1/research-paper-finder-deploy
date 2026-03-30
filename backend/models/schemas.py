@@ -5,7 +5,7 @@ class SearchRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=500)
     year_from: Optional[int] = None
     year_to: Optional[int] = None
-    max_results: int = Field(default=50, ge=1, le=1000)  # 50, 100, 200, 300, 1000
+    max_results: int = Field(default=50, ge=1, le=9999)
     include_associated: bool = False
     email: Optional[str] = None  # Optional email for completion notification
 

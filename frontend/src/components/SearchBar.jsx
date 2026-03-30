@@ -65,7 +65,8 @@ export default function SearchBar({ onSearch, loading }) {
             <label className="text-xs text-gray-400 mb-1 block">Max Results</label>
             <select value={maxResults} onChange={(e) => setMaxResults(parseInt(e.target.value))}
               className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand">
-              {[50, 100, 200, 300, 1000].map(n => <option key={n} value={n}>{n}</option>)}
+              {[1, 5, 10, 50, 100, 200, 500, 1000].map(n => <option key={n} value={n}>{n}</option>)}
+              <option value={9999}>Unlimited</option>
             </select>
           </div>
           <div>

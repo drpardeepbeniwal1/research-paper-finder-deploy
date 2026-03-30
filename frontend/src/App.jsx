@@ -237,7 +237,7 @@ export default function App() {
 
         {/* Loading state with live activity */}
         {(isSearching || searchMutation.isPending) && (
-          <div className="space-y-5 fade-in max-w-2xl mx-auto w-full">
+          <div className="space-y-5 fade-in max-w-4xl mx-auto w-full">
             {/* Progress bar + current step */}
             <div className="text-center space-y-3">
               <div className="w-8 h-8 spinner mx-auto" />
@@ -271,7 +271,7 @@ export default function App() {
                   <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                   <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Live Activity Feed</p>
                 </div>
-                <div className="p-3 max-h-64 overflow-y-auto text-xs font-mono space-y-1">
+                <div className="p-3 max-h-[520px] overflow-y-auto text-xs font-mono space-y-1">
                   {activityLog.map((entry, i) => {
                     const isScore = entry.msg.includes("score") || entry.msg.includes("scor");
                     const isAccepted = entry.msg.toLowerCase().includes("confirmed");
@@ -390,8 +390,8 @@ export default function App() {
         )}
       </main>
 
-      <footer className="border-t border-surface-border py-4 text-center text-xs text-gray-600">
-        Developed by <span className="text-gray-400">Pardeep Beniwal</span>, PhD Research Scholar &middot; Punjab Agricultural University, Ludhiana
+      <footer className="border-t border-surface-border py-5 text-center text-sm text-gray-500">
+        Developed by <span className="text-gray-300 font-semibold">Pardeep Beniwal</span>, PhD Research Scholar &middot; Punjab Agricultural University, Ludhiana
       </footer>
     </div>
   );

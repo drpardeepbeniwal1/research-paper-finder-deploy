@@ -63,6 +63,22 @@ class _PDF(FPDF):
         self.cfg = _TIER_CONFIG[tier]
         self.set_auto_page_break(auto=True, margin=18)
 
+    def cell(self, *args, **kwargs):
+        if "text" in kwargs:
+            kwargs["text"] = _safe_str(kwargs["text"])
+        elif len(args) >= 3:
+            args = list(args)
+            args[2] = _safe_str(args[2])
+        return super().cell(*args, **kwargs)
+
+    def multi_cell(self, *args, **kwargs):
+        if "text" in kwargs:
+            kwargs["text"] = _safe_str(kwargs["text"])
+        elif len(args) >= 3:
+            args = list(args)
+            args[2] = _safe_str(args[2])
+        return super().multi_cell(*args, **kwargs)
+
     def header(self):
         r, g, b = self.cfg["color"]
         self.set_fill_color(r, g, b)
