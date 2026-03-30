@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m py_compile services/nvidia_llm.py)",
+      "Bash(find /root/research-paper-finder -name *.log -type f)",
+      "Bash(find /root/research-paper-finder/frontend/src -type f -name *.vue -o -name *.jsx -o -name *.tsx)",
+      "Bash(python3 -m py_compile backend/services/nvidia_llm.py backend/services/email_service.py backend/routers/search.py backend/config.py)"
+    ]
+  }
+}

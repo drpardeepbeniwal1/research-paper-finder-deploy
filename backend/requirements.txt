@@ -1,0 +1,46 @@
+# Core framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-dotenv==1.0.1
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# LLM + AI
+openai==1.59.9
+tenacity==9.0.0
+
+# HTTP + scraping
+httpx[socks]==0.28.1
+aiohttp[speedups]==3.11.11
+aiofiles==24.1.0
+beautifulsoup4==4.13.3
+lxml==5.3.0
+feedparser==6.0.11
+
+# Anti-bot / stealth
+fake-useragent==2.0.3
+PySocks==1.7.1
+
+# Google Scholar
+scholarly==1.7.11
+
+# Academic APIs
+habanero==1.2.6          # CrossRef wrapper
+biopython==1.84          # PubMed / NCBI utilities
+
+# Deduplication
+rapidfuzz==3.11.0
+
+# PDF generation
+fpdf2==2.8.2
+
+# Database
+aiosqlite==0.20.0
+
+# Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.20
+
+# Utilities
+python-slugify==8.0.4

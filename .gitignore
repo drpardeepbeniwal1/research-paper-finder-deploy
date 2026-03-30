@@ -1,0 +1,27 @@
+# Secrets — never commit
+.env
+backend/.env
+*.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Data & downloads (large/sensitive)
+backend/data/
+data/
+rpf_pdfs/
+
+# IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
