@@ -126,13 +126,16 @@ export default function App() {
     setActivityLog((prev) => [...prev, { time, msg }]);
   };
 
+  const lastProgressRef = useRef(null);
+
   const startPolling = async (taskId) => {
     try {
       const data = await getSearchStatus(taskId);
       const newProgress = data.progress || null;
 
-      // Add new progress messages to activity log
-      if (newProgress && newProgress !== progress) {
+      // Only add to activity log if message actually changed
+      if (newProgress && newProgress !== lastProgressRef.current) {
+        lastProgressRef.current = newProgress;
         addActivity(newProgress);
       }
 

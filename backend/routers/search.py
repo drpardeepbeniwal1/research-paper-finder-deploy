@@ -16,7 +16,10 @@ _tasks: dict[str, dict] = {}
 
 async def _job_run_search(task_id: str, req: SearchRequest):
     try:
-        _tasks[task_id] = {"status": "running", "progress": "Starting search...", "progress_percent": 5}
+        _tasks[task_id] = {"status": "running", "progress": "Initializing search pipeline...", "progress_percent": 3}
+
+        def on_progress(msg: str, pct: int):
+            _tasks[task_id] = {"status": "running", "progress": msg, "progress_percent": pct}
 
         result = await run_search(
             query=req.query,
@@ -24,6 +27,7 @@ async def _job_run_search(task_id: str, req: SearchRequest):
             year_to=req.year_to,
             max_results=req.max_results,
             include_associated=req.include_associated,
+            on_progress=on_progress,
         )
 
         _tasks[task_id] = {

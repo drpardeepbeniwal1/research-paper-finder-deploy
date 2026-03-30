@@ -119,14 +119,21 @@ async def run_search(
     year_to: int = None,
     max_results: int = 10,
     include_associated: bool = False,
+    on_progress=None,
 ) -> SearchResult:
+    def _p(msg: str, pct: int):
+        if on_progress:
+            on_progress(msg, pct)
+
     # Cache check — return instantly if cached
     ck = _cache_key(query, year_from, year_to, include_associated)
     cached = await get_cached_search(ck)
     if cached:
+        _p("Loaded from cache!", 100)
         return SearchResult(**cached)
 
     # Step 1: LLM generates domain-aware multi-source search terms (1 LLM call)
+    _p("Asking NVIDIA LLM to generate domain-aware search terms...", 8)
     generated = await generate_search_terms(query)
     domain = generated.get("domain", "general")
     exclude_terms = generated.get("exclude_terms", [])
@@ -135,24 +142,36 @@ async def run_search(
         generated.get("terms_arxiv", []) +
         generated.get("terms_pubmed", [])
     )
+    _p(f"Domain detected: {domain} — generated {len(all_terms)} search terms", 15)
 
     # Step 2: Build compact query intent for scoring (0 LLM calls — uses generated dict)
+    _p("Building query intent for relevance scoring...", 20)
     intent = await build_query_intent(query, generated)
 
     # Step 3: Parallel fetch from domain-appropriate sources
+    sources = _get_sources(domain)
+    source_names = list({s[0].__name__.split(".")[-1] for s in sources})
+    _p(f"Fetching papers from {len(sources)} sources: {', '.join(source_names[:4])}...", 25)
     raw_papers = await _parallel_fetch(
         generated, domain, settings.max_results_per_source, year_from, year_to
     )
+    _p(f"Fetched {len(raw_papers)} raw papers from all sources", 50)
 
     # Step 4: Deduplicate (DOI > arXiv ID > title fuzzy) — zero duplicates
+    _p("Deduplicating papers (DOI → arXiv ID → title fuzzy match)...", 55)
     unique_papers = deduplicate(raw_papers)
+    _p(f"{len(unique_papers)} unique papers after deduplication (removed {len(raw_papers) - len(unique_papers)} duplicates)", 58)
 
     # Step 5: Pre-filter — keyword-based, no LLM, eliminates obvious noise
+    _p("Pre-filtering papers by keyword relevance (no LLM)...", 60)
     to_score, pre_rejected = apply_pre_filter(unique_papers, all_terms, exclude_terms)
+    _p(f"{len(to_score)} papers passed pre-filter, {len(pre_rejected)} filtered out — sending to LLM scoring...", 65)
 
     # Step 6: LLM scores only the papers that passed pre-filter
+    _p(f"NVIDIA LLM scoring {len(to_score)} papers for relevance (0-100)...", 70)
     obligatory = generated.get("obligatory_concepts", [])
     scored = await batch_score_papers(query, intent, to_score, obligatory)
+    _p(f"Scoring complete — categorizing results...", 88)
 
     # Step 7: Merge and categorize all papers
     all_scored = scored + pre_rejected  # pre_rejected have score=5
@@ -172,7 +191,9 @@ async def run_search(
 
     # Step 8: Optional associated papers for top-3 confirmed
     if include_associated:
-        for paper in confirmed[:3]:
+        _p(f"Finding associated papers for top {min(3, len(confirmed))} confirmed papers...", 90)
+        for i, paper in enumerate(confirmed[:3]):
+            _p(f"Fetching associated papers for: {paper.get('title', '')[:60]}...", 91 + i)
             assoc_queries = await get_associated_queries(
                 query, paper.get("title", ""), paper.get("abstract", "")
             )
@@ -188,10 +209,11 @@ async def run_search(
             paper["associated_papers"] = all_assoc[:4]
 
     # Step 9: Generate 3 tiered summary PDFs
+    _p(f"Generating PDF reports ({len(confirmed)} confirmed, {len(suspicious)} suspicious, {len(rejected)} rejected)...", 94)
     pdf_reports = await generate_tiered_pdfs(query, generated, confirmed, suspicious, rejected)
 
     # Step 10: Download actual paper PDFs into accepted/maybe/rejected folders
-    # Run concurrently (won't block — uses its own semaphore)
+    _p("Downloading paper PDFs in background...", 97)
     downloaded = await download_all_papers(all_scored)
 
     # Build response (papers array = confirmed only, up to max_results)
