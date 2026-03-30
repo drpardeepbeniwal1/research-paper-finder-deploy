@@ -29,7 +29,65 @@ function Header({ onLogout }) {
   );
 }
 
+const SECRET_CODE = "e3b6e625d9ab24982b84bba0d4792c7c";
+
+function AccessDenied({ onRetry }) {
+  const [inputCode, setInputCode] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (inputCode === SECRET_CODE) {
+      localStorage.setItem("rpf_access_granted", "true");
+      window.location.reload();
+    } else {
+      setError("Invalid access code");
+      setInputCode("");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-surface">
+      <div className="card max-w-md w-full mx-4 space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold text-white">Research Paper Finder</h1>
+          <p className="text-gray-400">This tool requires an access code</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <input
+              type="password"
+              placeholder="Enter access code"
+              value={inputCode}
+              onChange={(e) => {
+                setInputCode(e.target.value);
+                setError("");
+              }}
+              className="w-full px-4 py-2 bg-surface-card border border-surface-border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand"
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-400 text-sm text-center">{error}</div>
+          )}
+
+          <button
+            type="submit"
+            className="w-full px-4 py-2 bg-brand hover:bg-brand-light text-white font-medium rounded-lg transition-colors"
+          >
+            Access
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [accessGranted, setAccessGranted] = useState(() =>
+    localStorage.getItem("rpf_access_granted") === "true"
+  );
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("rpf_api_key") || "");
   const [results, setResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -40,6 +98,18 @@ export default function App() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const key = urlParams.get("key");
+
+    // Check URL for access code
+    if (key === SECRET_CODE) {
+      localStorage.setItem("rpf_access_granted", "true");
+      setAccessGranted(true);
+      urlParams.delete("key");
+      const newSearch = urlParams.toString();
+      const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "");
+      window.history.replaceState({}, "", newUrl);
+    }
+
     const token = urlParams.get("token");
     if (token) {
       localStorage.setItem("rpf_access_token", token);
@@ -48,7 +118,7 @@ export default function App() {
       const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "");
       window.history.replaceState({}, "", newUrl);
     }
-    
+
     return () => {
       if (pollTimer.current) clearTimeout(pollTimer.current);
     };
@@ -99,6 +169,7 @@ export default function App() {
     setIsSearching(false);
   };
 
+  if (!accessGranted) return <AccessDenied />;
   if (!apiKey) return <ApiKeySetup onReady={setApiKey} />;
 
   return (
