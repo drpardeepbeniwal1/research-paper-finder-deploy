@@ -13,9 +13,9 @@ OUTPUT_DIR = "./data/pdfs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 _TIER_CONFIG = {
-    "confirmed":  {"label": "CONFIRMED — High Relevance",   "color": (14, 128, 70),  "accent": (20, 180, 100)},
-    "suspicious": {"label": "SUSPICIOUS — Possible Relevance", "color": (180, 120, 0), "accent": (220, 160, 0)},
-    "rejected":   {"label": "REJECTED — Below Threshold",   "color": (160, 30, 30),  "accent": (200, 60, 60)},
+    "confirmed":  {"label": "CONFIRMED - High Relevance",      "color": (14, 128, 70),  "accent": (20, 180, 100)},
+    "suspicious": {"label": "SUSPICIOUS - Possible Relevance", "color": (180, 120, 0),  "accent": (220, 160, 0)},
+    "rejected":   {"label": "REJECTED - Below Threshold",      "color": (160, 30, 30),  "accent": (200, 60, 60)},
 }
 
 def _safe(text: str, max_chars: int = 50) -> str:
