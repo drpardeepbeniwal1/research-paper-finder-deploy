@@ -35,11 +35,12 @@ class AccessTokenMiddleware(BaseHTTPMiddleware):
         # Exemptions for frontend assets and health check
         path = request.url.path
         if (
-            path == "/health" 
-            or path == "/" 
-            or path == "/index.html" 
+            path == "/health"
+            or path == "/"
+            or path == "/index.html"
             or path.startswith("/assets/")
             or path == "/favicon.ico"
+            or path == "/auth/keys"  # Allow creating API keys without access token
         ):
             return await call_next(request)
 
