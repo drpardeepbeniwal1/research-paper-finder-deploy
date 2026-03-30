@@ -170,7 +170,7 @@ async def run_search(
     # Step 6: LLM scores only the papers that passed pre-filter
     _p(f"NVIDIA LLM scoring {len(to_score)} papers for relevance (0-100)...", 70)
     obligatory = generated.get("obligatory_concepts", [])
-    scored = await batch_score_papers(query, intent, to_score, obligatory)
+    scored = await batch_score_papers(query, intent, to_score, obligatory, on_progress=on_progress)
     _p(f"Scoring complete — categorizing results...", 88)
 
     # Step 7: Merge and categorize all papers

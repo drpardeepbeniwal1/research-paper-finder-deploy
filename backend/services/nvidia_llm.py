@@ -224,11 +224,15 @@ async def batch_score_papers(
     query_intent: str,
     papers: list[dict],
     obligatory_concepts: list[str] | None = None,
+    on_progress=None,
 ) -> list[dict]:
     """Score all papers with DB caching. Passes obligatory_concepts for strict multi-concept enforcement."""
     from db import get_paper_score, cache_paper_score
     results = []
-    for paper in papers:
+    total = len(papers)
+    confirmed = suspicious = rejected = 0
+
+    for i, paper in enumerate(papers):
         pid = paper.get("id", "")
         cached = await get_paper_score(pid, query) if pid else None
         if cached:
@@ -243,5 +247,25 @@ async def batch_score_papers(
             paper["relevance_reasoning"] = reason
             if pid:
                 await cache_paper_score(pid, query, score, reason)
+
+        score = paper.get("relevance_score", 0)
+        title = paper.get("title", "Unknown")[:55]
+        if score >= 70:
+            confirmed += 1
+            verdict = f"✓ ACCEPTED (score {score}) — {title}..."
+        elif score >= 40:
+            suspicious += 1
+            verdict = f"? SUSPICIOUS (score {score}) — {title}..."
+        else:
+            rejected += 1
+            verdict = f"✗ REJECTED (score {score}) — {title}..."
+
+        if on_progress:
+            pct = 70 + int((i + 1) / total * 18)
+            on_progress(
+                f"[{i+1}/{total}] {verdict} | So far: {confirmed} accepted, {suspicious} suspicious, {rejected} rejected",
+                pct
+            )
+
         results.append(paper)
     return results

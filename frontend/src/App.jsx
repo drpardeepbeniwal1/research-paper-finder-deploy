@@ -237,42 +237,68 @@ export default function App() {
 
         {/* Loading state with live activity */}
         {(isSearching || searchMutation.isPending) && (
-          <div className="space-y-4 fade-in">
-            {/* Progress bar and stop button */}
+          <div className="space-y-5 fade-in max-w-2xl mx-auto w-full">
+            {/* Progress bar + current step */}
             <div className="text-center space-y-3">
-              <div className="w-10 h-10 spinner mx-auto" style={{ width: 40, height: 40 }} />
-              <p className="text-white font-medium">Deep searching research papers...</p>
-              <p className="text-gray-500 text-sm">
-                {progress || "Generating search terms..."}
+              <div className="w-8 h-8 spinner mx-auto" />
+              <p className="text-white font-semibold text-lg">Searching research papers...</p>
+              <p className="text-brand-light text-sm font-medium">
+                {progress || "Initializing..."}
               </p>
               {progressPercent > 0 && (
                 <div className="max-w-md mx-auto">
-                  <div className="w-full h-2 bg-surface-border rounded-full overflow-hidden">
-                    <div className="h-full bg-brand transition-all" style={{ width: `${progressPercent}%` }} />
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Progress</span>
+                    <span>{progressPercent}%</span>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1">{progressPercent}%</p>
+                  <div className="w-full h-2.5 bg-surface-border rounded-full overflow-hidden">
+                    <div className="h-full bg-brand transition-all duration-500 rounded-full" style={{ width: `${progressPercent}%` }} />
+                  </div>
                 </div>
               )}
-              {/* STOP BUTTON */}
               <button
                 onClick={handleStop}
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/50 text-red-400 hover:text-red-300 rounded-lg transition-colors text-sm font-medium"
+                className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/50 text-red-400 hover:text-red-300 rounded-lg transition-colors text-sm font-medium"
               >
                 <Square className="w-3.5 h-3.5" fill="currentColor" /> Stop Search
               </button>
             </div>
 
-            {/* Live Activity Log */}
+            {/* Live Activity Feed */}
             {activityLog.length > 0 && (
-              <div className="max-w-2xl mx-auto">
-                <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wider">Live Activity</p>
-                <div className="bg-surface-card border border-surface-border rounded-lg p-3 max-h-48 overflow-y-auto text-xs font-mono">
-                  {activityLog.map((entry, i) => (
-                    <div key={i} className="flex gap-2 py-0.5">
-                      <span className="text-gray-600 whitespace-nowrap">[{entry.time}]</span>
-                      <span className="text-gray-300">{entry.msg}</span>
-                    </div>
-                  ))}
+              <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+                <div className="px-4 py-2 border-b border-surface-border flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Live Activity Feed</p>
+                </div>
+                <div className="p-3 max-h-64 overflow-y-auto text-xs font-mono space-y-1">
+                  {activityLog.map((entry, i) => {
+                    const isScore = entry.msg.includes("score") || entry.msg.includes("scor");
+                    const isAccepted = entry.msg.toLowerCase().includes("confirmed");
+                    const isRejected = entry.msg.toLowerCase().includes("rejected") || entry.msg.toLowerCase().includes("filtered out");
+                    const isSuspicious = entry.msg.toLowerCase().includes("suspicious");
+                    const isComplete = entry.msg.toLowerCase().includes("complete") || entry.msg.toLowerCase().includes("finished");
+                    const isError = entry.msg.toLowerCase().includes("error") || entry.msg.toLowerCase().includes("failed");
+                    const isFetch = entry.msg.toLowerCase().includes("fetched") || entry.msg.toLowerCase().includes("fetch");
+
+                    let rowColor = "text-gray-300";
+                    let badge = null;
+                    if (isComplete) { rowColor = "text-green-400"; badge = "✓"; }
+                    else if (isError) { rowColor = "text-red-400"; badge = "✗"; }
+                    else if (isAccepted) { rowColor = "text-green-300"; badge = "✓"; }
+                    else if (isRejected) { rowColor = "text-red-300"; badge = "✗"; }
+                    else if (isSuspicious) { rowColor = "text-yellow-300"; badge = "?"; }
+                    else if (isFetch) { rowColor = "text-blue-300"; badge = "↓"; }
+                    else if (isScore) { rowColor = "text-purple-300"; badge = "★"; }
+
+                    return (
+                      <div key={i} className={`flex gap-2 py-0.5 ${i === activityLog.length - 1 ? "font-semibold" : "opacity-80"}`}>
+                        <span className="text-gray-600 whitespace-nowrap shrink-0">{entry.time}</span>
+                        {badge && <span className={rowColor + " shrink-0"}>{badge}</span>}
+                        <span className={rowColor}>{entry.msg}</span>
+                      </div>
+                    );
+                  })}
                   <div ref={logEndRef} />
                 </div>
               </div>
@@ -318,7 +344,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-surface-border py-4 text-center text-xs text-gray-600">
-        Research Paper Finder &middot; NVIDIA NIM Free Tier
+        Developed by <span className="text-gray-400">Pardeep Beniwal</span>, PhD Research Scholar &middot; Punjab Agricultural University, Ludhiana
       </footer>
     </div>
   );
