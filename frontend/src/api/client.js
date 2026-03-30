@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// When served from FastAPI (same domain), use relative URLs.
+// When served from FastAPI (same domain), use /api/ prefix.
 // When running dev server separately, use VITE_API_BASE_URL.
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
 const api = axios.create({ baseURL: BASE });
 
