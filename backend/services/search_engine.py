@@ -77,9 +77,16 @@ def _cache_key(query: str, yf, yt, assoc: bool) -> str:
     raw = json.dumps({"q": query, "yf": yf, "yt": yt, "a": assoc}, sort_keys=True)
     return hashlib.md5(raw.encode()).hexdigest()
 
+_SOURCE_TIMEOUT = 25  # seconds per individual source request
+
 async def _fetch_source(module, term: str, max_r: int, yf, yt) -> list[dict]:
     try:
-        return await module.search(term, max_r, yf, yt)
+        return await asyncio.wait_for(
+            module.search(term, max_r, yf, yt),
+            timeout=_SOURCE_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        return []
     except Exception:
         return []
 
@@ -88,6 +95,7 @@ async def _parallel_fetch(
     domain: str,
     max_per_source: int,
     year_from, year_to,
+    on_progress=None,
 ) -> list[dict]:
     sources = _get_sources(domain)
     general = generated.get("terms_general", [])
@@ -95,17 +103,60 @@ async def _parallel_fetch(
     pubmed_terms = generated.get("terms_pubmed", []) or general[:2]
 
     sem = asyncio.Semaphore(4)
-    tasks = []
+    source_counts: dict[str, int] = {}
+    source_status: dict[str, str] = {}
+    lock = asyncio.Lock()
 
-    async def bounded(src, term):
+    async def bounded(src_name: str, src, term: str):
         async with sem:
-            return await _fetch_source(src, term, max_per_source, year_from, year_to)
+            try:
+                result = await asyncio.wait_for(
+                    src.search(term, max_per_source, year_from, year_to),
+                    timeout=_SOURCE_TIMEOUT,
+                )
+                count = len(result) if isinstance(result, list) else 0
+                async with lock:
+                    source_counts[src_name] = source_counts.get(src_name, 0) + count
+                    source_status[src_name] = "done"
+                if on_progress:
+                    done = sum(1 for s in source_status.values() if s in ("done", "timeout", "error"))
+                    total_tasks = len(task_meta)
+                    on_progress(
+                        f"[{done}/{total_tasks}] {src_name}: {count} papers found (term: {term[:40]})",
+                        25 + int(done / max(total_tasks, 1) * 20),
+                    )
+                return result if isinstance(result, list) else []
+            except asyncio.TimeoutError:
+                async with lock:
+                    source_status[src_name] = "timeout"
+                if on_progress:
+                    done = sum(1 for s in source_status.values() if s in ("done", "timeout", "error"))
+                    total_tasks = len(task_meta)
+                    on_progress(
+                        f"[{done}/{total_tasks}] {src_name}: timeout after {_SOURCE_TIMEOUT}s (skipped)",
+                        25 + int(done / max(total_tasks, 1) * 20),
+                    )
+                return []
+            except Exception as e:
+                async with lock:
+                    source_status[src_name] = "error"
+                if on_progress:
+                    done = sum(1 for s in source_status.values() if s in ("done", "timeout", "error"))
+                    total_tasks = len(task_meta)
+                    on_progress(
+                        f"[{done}/{total_tasks}] {src_name}: error ({type(e).__name__})",
+                        25 + int(done / max(total_tasks, 1) * 20),
+                    )
+                return []
 
+    task_meta = []
     for src, uses_arxiv, uses_pubmed in sources:
         terms = arxiv if uses_arxiv else (pubmed_terms if uses_pubmed else general)
+        src_name = src.__name__.split(".")[-1] if hasattr(src, "__name__") else str(src)
         for term in terms:
-            tasks.append(bounded(src, term))
+            task_meta.append((src_name, src, term))
 
+    tasks = [bounded(src_name, src, term) for src_name, src, term in task_meta]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     papers = []
     for r in results:
@@ -153,7 +204,8 @@ async def run_search(
     source_names = list({s[0].__name__.split(".")[-1] for s in sources})
     _p(f"Fetching papers from {len(sources)} sources: {', '.join(source_names[:4])}...", 25)
     raw_papers = await _parallel_fetch(
-        generated, domain, settings.max_results_per_source, year_from, year_to
+        generated, domain, settings.max_results_per_source, year_from, year_to,
+        on_progress=on_progress,
     )
     _p(f"Fetched {len(raw_papers)} raw papers from all sources", 50)
 
@@ -199,7 +251,7 @@ async def run_search(
             )
             assoc_raw: list[dict] = []
             mini_gen: dict[str, list] = {"terms_general": assoc_queries, "terms_arxiv": assoc_queries, "terms_pubmed": []}
-            partial = await _parallel_fetch(mini_gen, domain, 5, year_from, year_to)
+            partial = await _parallel_fetch(mini_gen, domain, 5, year_from, year_to, on_progress=on_progress)
             assoc_raw.extend(partial)
             assoc_unique = deduplicate(assoc_raw)
             assoc_to_score, assoc_rejected = apply_pre_filter(assoc_unique, assoc_queries, exclude_terms)
