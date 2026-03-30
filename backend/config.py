@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     nvidia_key_1: str = ""
     nvidia_key_2: str = ""
     nvidia_key_3: str = ""
-    nvidia_model: str = "nvidia/nemotron-3-super-120b-a12b"
+    nvidia_model: str = "nvidia/llama-3.1-nemotron-70b-instruct"
     nvidia_rpm_per_key: int = 20
 
     # Server

@@ -4,7 +4,7 @@ import { searchPapers, getSearchStatus } from "./api/client";
 import SearchBar from "./components/SearchBar";
 import ResultsGrid from "./components/ResultsGrid";
 import ApiKeySetup from "./components/ApiKeySetup";
-import { BookOpen, Cpu, LogOut, AlertCircle, Square, X } from "lucide-react";
+import { BookOpen, Cpu, LogOut, AlertCircle, Square, X, FileText, Download } from "lucide-react";
 
 function Header({ onLogout, onClear, showClear }) {
   return (
@@ -331,6 +331,53 @@ export default function App() {
                   <span className="text-gray-300">{entry.msg}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* PDF Downloads */}
+        {results && !isSearching && results.pdf_reports && (
+          <div className="max-w-2xl mx-auto w-full">
+            <p className="text-xs text-gray-500 mb-3 font-semibold uppercase tracking-wider flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5" /> Download PDF Reports
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {results.pdf_reports.confirmed && (
+                <a
+                  href={`/api/search/pdf/${results.pdf_reports.confirmed}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 p-4 bg-green-900/20 border border-green-700/40 rounded-xl hover:bg-green-900/40 transition-colors group"
+                >
+                  <Download className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-green-300 text-xs font-semibold text-center">Confirmed Papers</span>
+                  <span className="text-green-500 text-xs">Score ≥ 70</span>
+                </a>
+              )}
+              {results.pdf_reports.suspicious && (
+                <a
+                  href={`/api/search/pdf/${results.pdf_reports.suspicious}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 p-4 bg-yellow-900/20 border border-yellow-700/40 rounded-xl hover:bg-yellow-900/40 transition-colors group"
+                >
+                  <Download className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-yellow-300 text-xs font-semibold text-center">Suspicious Papers</span>
+                  <span className="text-yellow-500 text-xs">Score 40–69</span>
+                </a>
+              )}
+              {results.pdf_reports.rejected && (
+                <a
+                  href={`/api/search/pdf/${results.pdf_reports.rejected}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 p-4 bg-red-900/20 border border-red-700/40 rounded-xl hover:bg-red-900/40 transition-colors group"
+                >
+                  <Download className="w-5 h-5 text-red-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-red-300 text-xs font-semibold text-center">Rejected Papers</span>
+                  <span className="text-red-500 text-xs">Score &lt; 40</span>
+                </a>
+              )}
             </div>
           </div>
         )}

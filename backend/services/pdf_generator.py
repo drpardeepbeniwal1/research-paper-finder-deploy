@@ -37,7 +37,20 @@ def _wrap(text: str, max_chars: int = 95) -> list[str]:
 
 def _safe_str(val, default="") -> str:
     try:
-        return str(val or default)
+        text = str(val or default)
+        # Replace common Unicode chars that Helvetica can't render
+        replacements = {
+            "\u2014": "--", "\u2013": "-", "\u2012": "-",  # em/en dashes
+            "\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"',  # smart quotes
+            "\u2026": "...", "\u00b0": " deg", "\u00b1": "+/-",
+            "\u03b1": "alpha", "\u03b2": "beta", "\u03b3": "gamma",
+            "\u00e9": "e", "\u00e8": "e", "\u00ea": "e", "\u00fc": "u",
+            "\u00e4": "a", "\u00f6": "o", "\u00c4": "A", "\u00d6": "O",
+        }
+        for char, replacement in replacements.items():
+            text = text.replace(char, replacement)
+        # Strip any remaining non-latin1 chars
+        return text.encode("latin-1", errors="replace").decode("latin-1")
     except Exception:
         return default
 
